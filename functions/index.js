@@ -5,6 +5,8 @@ process.env.DEBUG = 'actions-on-google:*';
 const App = require('actions-on-google').DialogflowApp;
 const functions = require('firebase-functions');
 const https = require('https');
+var admin = require("firebase-admin");
+
 
 // a. the action name from the make_name Dialogflow intent
 const WELCOME_ACTION = 'input.welcome';
@@ -17,13 +19,30 @@ exports.cointrackingBalance = functions.https.onRequest((request, response) => {
   const app = new App({request, response});
   console.log('Request headers: ' + JSON.stringify(request.headers));
   console.log('Request body: ' + JSON.stringify(request.body));
+  admin.initializeApp(functions.config().firebase);
+  console.log('Database intialized!');
+
 
 // c. The function that generates the silly name
   function welcomeIntent (app) {
-    
+
+    //Inizializzo db
+    var db = admin.database();
+    var userId = app.getUser().userId;
+    var userData;
+
+    //Faccio query Alias Cointracking basandomi su userId
+    var ref = db.ref("users");
+ref.orderByChild("userId").equalTo(userId).on("child_added", function(snapshot) {
+  console.log(snapshot.key);
+  userData = snapshot.val();
+  console.log(userData.username);
+  console.log(userData.userId);
+});
+
     //Check se username già presente in memoria
-    if(false){
-      //TODO
+    if(userData != null){
+      checkBalance(app,userData.username, true);
     }
     else{
       app.ask('It seems you have not yet set the' + 
@@ -35,11 +54,26 @@ exports.cointrackingBalance = functions.https.onRequest((request, response) => {
   function checkUser(app){
 
     let username = app.getArgument(USERNAME);
-    checkBalance(app,username);
+
+    //Inizializzo db
+    //admin.initializeApp(functions.config().firebase);
+    var db = admin.database();
+    var userId = app.getUser().userId;
+    var ref = db.ref("users");
+
+    //Inserisco record su DB
+
+    ref.push({
+      userId: userId,
+      username: username
+    })
+    
+
+    checkBalance(app,username, false);
 
   }
 
-  function checkBalance(app, username){
+  function checkBalance(app, username, isUsernameStored){
 
     https.get('https://cointracking.info/portfolio/'+ username, (resp) => {
   
@@ -52,13 +86,20 @@ exports.cointrackingBalance = functions.https.onRequest((request, response) => {
 
   // The whole response has been received. Print out the result.
   resp.on('end', () => {
-    app.tell("Success!");
+    app.tell("Hello, "+username+"!");
     console.log(JSON.parse(data).explanation);
   });
 
 }).on("error", (err) => {
   console.log("Error: " + err.message);
-  app.tell("I can't seem to find a portfolio with that username.")
+//Riguarda
+if(isUsernameStored){
+  app.ask("I can't seem to find a portfolio with that username. Do you want to change it?",
+    ['Do you want to change your username?', 'Do you want to change your username?', 'We can stop here. See you soon.']);
+}
+else{
+  app.tell("I can't seem to find a portfolio with that username.");
+}
 });
 
   }
