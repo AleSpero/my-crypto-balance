@@ -5,7 +5,8 @@ process.env.DEBUG = 'actions-on-google:*';
 const App = require('actions-on-google').DialogflowApp;
 const functions = require('firebase-functions');
 const https = require('https');
-var admin = require("firebase-admin");
+const admin = require("firebase-admin");
+const cheerio = require('cheerio');
 
 
 // a. the action name from the make_name Dialogflow intent
@@ -14,12 +15,16 @@ const USERNAME_ACTION = 'ask_username'
 // b. the parameters that are parsed from the make_name intent 
 const USERNAME = 'username';
 const NUMBER_ARGUMENT = 'number';
+const COIN_BALANCE = 0;
+
 
 exports.cointrackingBalance = functions.https.onRequest((request, response) => {
   const app = new App({request, response});
   console.log('Request headers: ' + JSON.stringify(request.headers));
   console.log('Request body: ' + JSON.stringify(request.body));
+  if (!admin.apps.length) {
   admin.initializeApp(functions.config().firebase);
+}
   console.log('Database intialized!');
 
 
@@ -75,7 +80,14 @@ ref.orderByChild("userId").equalTo(userId).on("child_added", function(snapshot) 
 
   function checkBalance(app, username, isUsernameStored){
 
-    https.get('https://cointracking.info/portfolio/'+ username, (resp) => {
+    var options = {
+      host: 'cointracking.info',
+      path: '/portfolio/'+ username + '/'
+    };
+
+    console.log("https://cointracking.info/portfolio/"+username+'/');
+
+    https.get(options, (resp) => {
   
   let data = '';
 
@@ -86,8 +98,44 @@ ref.orderByChild("userId").equalTo(userId).on("child_added", function(snapshot) 
 
   // The whole response has been received. Print out the result.
   resp.on('end', () => {
-    app.tell("Hello, "+username+"!");
-    console.log(JSON.parse(data).explanation);
+    console.log("Loaded successfully");
+    const $ = cheerio.load(data);
+
+    //Prendo dati
+    var resultBalance = $('span.utitel_gross').first().text();
+    var resultBalanceBTC = $('span.utitel_gross_grau').first().text();
+    var resultTrend = $("span[title='24h trend']").first().text();
+
+    //resultTrend è null, come mai?
+
+    var trendWord = resultTrend.charAt(0) == '+' ? "an increase" : "a decrease";
+
+    if(resultBalance.length > 0){
+
+           app.ask(app.buildRichResponse()
+    // Create a basic card and add it to the rich response
+    .addSimpleResponse("Hello, "+username+"!")
+
+    .addSimpleResponse( "Your balance is "+resultBalance+".\n"+
+      "There has been "+trendWord+" of "+resultTrend.substr(1,4)+" percent!")
+
+    .addBasicCard(app.buildBasicCard('42 is an even composite number. It' +
+      'is composed of three distinct prime numbers multiplied together. It' +
+      'has a total of eight divisors. 42 is an abundant number, because the' +
+      'sum of its proper divisors 54 is greater than itself. To count from' +
+      '1 to 42 would take you about twenty-one…')
+      .setTitle('Math & prime numbers')
+      .addButton('Read more', 'https://example.google.com/mathandprimes')
+      .setImage('https://example.google.com/42.png', 'Image alternate text')
+      .setImageDisplay('CROPPED')
+    )
+  );
+
+    }
+    else{
+      app.tell("There was an error while retrieving your balance. Please try later.")
+    }
+
   });
 
 }).on("error", (err) => {

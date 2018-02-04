@@ -17,7 +17,8 @@
   "dependencies": {
     "actions-on-google": "^1.5.0",
     "firebase-admin": "^4.2.1",
-    "firebase-functions": "^0.5.7"
+    "firebase-functions": "^0.5.7",
+    "cheerio": "*"
   },
   "devDependencies": {
     "eslint": "^3.19.0",
