@@ -66,6 +66,8 @@ ref.orderByChild("userId").equalTo(userId).on("child_added", function(snapshot) 
     var userId = app.getUser().userId;
     var ref = db.ref("users");
 
+
+
     //Inserisco record su DB
 
     ref.push({
@@ -73,6 +75,7 @@ ref.orderByChild("userId").equalTo(userId).on("child_added", function(snapshot) 
       username: username
     })
     
+    //Rivedi logica DB (id deve essere univoco)
 
     checkBalance(app,username, false);
 
@@ -124,12 +127,17 @@ ref.orderByChild("userId").equalTo(userId).on("child_added", function(snapshot) 
       'has a total of eight divisors. 42 is an abundant number, because the' +
       'sum of its proper divisors 54 is greater than itself. To count from' +
       '1 to 42 would take you about twenty-one…')
-      .setTitle('Math & prime numbers')
-      .addButton('Read more', 'https://example.google.com/mathandprimes')
-      .setImage('https://example.google.com/42.png', 'Image alternate text')
-      .setImageDisplay('CROPPED')
-    )
+      .setTitle('My Balance')
+      .addButton('Check my portfolio', "https://cointracking.info/portfolio/"+username+'/')
+      .setImage('https://cointracking.info/assets/img/logo.png', 'Image alternate text')
+      .setImageDisplay('DEFAULT')
+      .addSuggestions(['What are my last trades?',
+        'How my portfolio is distribuited?',
+        'Another suggestion chip here'])
   );
+    //Fai list con varie monete anzichè basic card??
+           //Prendi i dati delle monete in percentuale e crea pie chart + altre cose da fare brain storming
+
 
     }
     else{
