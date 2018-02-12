@@ -77,7 +77,7 @@ ref.orderByChild("userId").equalTo(userId).on("child_added", function(snapshot) 
     var coinBalance;
     var trendResult;
 
-    for(var i = 0; rowData.length; i++){
+    for(var i = 0; i<rowData.length; i++){
 
       switch(trendType){
         case ONE_HOUR_TREND:
@@ -104,7 +104,9 @@ ref.orderByChild("userId").equalTo(userId).on("child_added", function(snapshot) 
 
     }
 
-    trendResult = ((parseFloat(currentBalance)/previousBalance)*100) - 100;
+    console.log(previousBalance);
+
+    trendResult = (((parseFloat(currentBalance)/previousBalance))*100) -100;
 
     return trendResult;
 
@@ -174,7 +176,7 @@ ref.orderByChild("userId").equalTo(userId).on("child_added", function(snapshot) 
       let dataTable = '';
 
       resp.on('data', (chunk) => {
-        data+=chunk;
+        dataTable+=chunk;
       });
 
       resp.on('error', (err) => {
@@ -183,8 +185,10 @@ ref.orderByChild("userId").equalTo(userId).on("child_added", function(snapshot) 
 
 
       resp.on('end', () => {
+        console.log(dataTable);
 
-        var jsonData = data.data; //PARSE
+        var jsonData = JSON.parse(dataTable); //PARSE
+        jsonData = jsonData.data;
         var htmlRowData;
 
           var rows = $('#all_currencies_info tbody tr');
@@ -192,7 +196,7 @@ ref.orderByChild("userId").equalTo(userId).on("child_added", function(snapshot) 
 
     console.log('rows length is '+ jsonData.length);
 
-    var resultTrend = calculateTrend(jsonData, rows, ONE_DAY_TREND);
+    var resultTrend = calculateTrend(parseFloat(resultBalance), jsonData, ONE_DAY_TREND);
     var trendWord = resultTrend > 0 ? "an increase" : "a decrease";
 
     if(resultBalance.length > 0){
@@ -209,8 +213,8 @@ ref.orderByChild("userId").equalTo(userId).on("child_added", function(snapshot) 
         coinSymbol = htmlRowData('span.t_coin').find('a').first().text();
 
 
-        balanceList = balanceList.addItems(app.buildOptionItem(coinName,
-        [coinName, coinName, coinName])
+        balanceList = balanceList.addItems(app.buildOptionItem("diocaro"+i,
+        ["ou"+i, "dio"+i, "dedio"+i])
       .setTitle(coinName + " - "+ coinSymbol)
           .setImage('https://cointracking.info/img/coins/' + coinSymbol.toLowerCase() + '.svg')
           );
@@ -251,7 +255,7 @@ ref.orderByChild("userId").equalTo(userId).on("child_added", function(snapshot) 
     }
 
 
-      }
+      });
 
     });
 
